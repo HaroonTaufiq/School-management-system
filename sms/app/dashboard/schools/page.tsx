@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
+import type { Session } from 'next-auth'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -9,9 +10,16 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Toast } from '../../components/toast'
 import { Loader2 } from 'lucide-react'
 
+interface School {
+  _id: string;
+  name: string;
+  location: string;
+  classrooms: string[];
+}
+
 export default function SchoolsPage() {
-  const { data: session, status } = useSession()
-  const [schools, setSchools] = useState([])
+  const { data: session, status } = useSession() as { data: Session | null, status: string }
+  const [schools, setSchools] = useState<School[]>([])
   const [newSchool, setNewSchool] = useState({ name: '', location: '' })
   const [loading, setLoading] = useState(true)
   const [creating, setCreating] = useState(false)
@@ -110,7 +118,7 @@ export default function SchoolsPage() {
             <div className="flex justify-center"><Loader2 className="animate-spin" /></div>
           ) : (
             <ul className="space-y-2">
-              {schools.map((school: any) => (
+              {schools.map((school: School) => (
                 <li key={school._id} className="flex justify-between items-center">
                   <span>{school.name} - {school.location}</span>
                   <span>Classrooms: {school.classrooms.length}</span>
@@ -130,4 +138,3 @@ export default function SchoolsPage() {
     </div>
   )
 }
-

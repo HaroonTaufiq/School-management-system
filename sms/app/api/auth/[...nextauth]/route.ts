@@ -1,10 +1,13 @@
-import { Session, User } from "next-auth"
-import type { NextAuthOptions } from "next-auth"
+
+import NextAuth from "next-auth"
+import type { NextAuthOptions, User } from "next-auth"
 import CredentialsProvider from "next-auth/providers/credentials"
-import { connectToDatabase } from "./mongodb"
 import { compare } from "bcryptjs"
-import { generateToken } from "./jwt"
+import { connectToDatabase } from "@/lib/mongodb"
+import { generateToken } from "@/lib/jwt"
 import { JWT } from "next-auth/jwt"
+import { Session } from "next-auth"
+import { User as UserModel } from "@/models/User"
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -19,8 +22,8 @@ export const authOptions: NextAuthOptions = {
           throw new Error("Invalid credentials")
         }
 
-        const { db } = await connectToDatabase()
-        const user = await db.collection("users").findOne({ email: credentials.email })
+        await connectToDatabase()
+        const user = await UserModel.findOne({ email: credentials.email })
 
         if (!user || !(await compare(credentials.password, user.password))) {
           throw new Error("Invalid credentials")
@@ -29,28 +32,30 @@ export const authOptions: NextAuthOptions = {
         return {
           id: user._id.toString(),
           email: user.email,
-          isAdmin: user.isAdmin,
+          role: user.role,
           school: user.school,
         }
       }
     })
   ],
   callbacks: {
-    async jwt({ token, user }:{ token: JWT, user?: User }) {
+    async jwt({ token, user }: { token: JWT, user?: User }) {
       if (user) {
         token.id = user.id
         token.email = user.email
-        token.isAdmin = user.isAdmin
+        token.role = user.role
         token.school = user.school
       }
       return token
     },
-    async session({ session, token }:{ session: Session, token: JWT }) {
-      session.user.id = token.id
-      session.user.email = token.email
-      session.user.isAdmin = token.isAdmin
-      session.user.school = token.school
-      session.accessToken = generateToken(token)
+    async session({ session, token }: { session: Session, token: JWT }) {
+      if (token && session.user) {
+        session.user.id = token.id as string
+        session.user.email = token.email as string
+        session.user.role = token.role as string
+        session.user.school = token.school as string | undefined
+        session.accessToken = generateToken(token)
+      }
       return session
     }
   },
@@ -59,6 +64,10 @@ export const authOptions: NextAuthOptions = {
   },
   session: {
     strategy: 'jwt',
+    maxAge: 30 * 24 * 60 * 60, // 30 days
   },
   secret: process.env.NEXTAUTH_SECRET,
 }
+
+export default NextAuth(authOptions)
+

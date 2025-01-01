@@ -4,13 +4,14 @@ import { z } from 'zod'
 import { getToken } from 'next-auth/jwt'
 import { verifyToken } from '@/lib/jwt'
 import { School } from '@/models/School'
+import { NextRequest } from 'next/server'
 
 const schoolSchema = z.object({
   name: z.string().min(1),
   location: z.string().min(1),
 });
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   try {
     const token = await getToken({ req })
     if (!token || !verifyToken(token.accessToken as string) || !token.isAdmin) {
@@ -43,7 +44,7 @@ export async function POST(req: Request) {
   }
 }
 
-export async function GET(req: Request) {
+export async function GET(req: NextRequest) {
   try {
     const token = await getToken({ req })
     if (!token || !verifyToken(token.accessToken as string)) {

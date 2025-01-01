@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
+import { Session } from 'next-auth'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -9,9 +10,20 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Toast } from '../../components/toast'
 import { Loader2 } from 'lucide-react'
 
+interface Classroom {
+  _id: string;
+  name: string;
+  vacancy: number;
+  students: string[];
+  school: string;
+}
+
 export default function ClassroomsPage() {
-  const { data: session, status } = useSession()
-  const [classrooms, setClassrooms] = useState([])
+  const { data: session, status } = useSession() as { 
+    data: Session | null, 
+    status: "loading" | "authenticated" | "unauthenticated" 
+  }
+  const [classrooms, setClassrooms] = useState<Classroom[]>([])
   const [newClassroom, setNewClassroom] = useState({ name: '', vacancy: '', school: '' })
   const [loading, setLoading] = useState(true)
   const [creating, setCreating] = useState(false)
@@ -26,7 +38,7 @@ export default function ClassroomsPage() {
   const fetchClassrooms = async () => {
     try {
       setLoading(true)
-      const res = awaitfetch('/api/classrooms')
+      const res = await fetch('/api/classrooms')
       if (!res.ok) throw new Error('Failed to fetch classrooms')
       const data = await res.json()
       setClassrooms(data.classrooms)
@@ -45,7 +57,7 @@ export default function ClassroomsPage() {
       const res = await fetch('/api/classrooms', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...newClassroom, vacancy: parseInt(newClassroom.vacancy), school: session?.user.school }),
+        body: JSON.stringify({ ...newClassroom, vacancy: parseInt(newClassroom.vacancy), school: session?.user?.school }),
       })
       if (!res.ok) throw new Error('Failed to create classroom')
       setNewClassroom({ name: '', vacancy: '', school: '' })
@@ -63,7 +75,7 @@ export default function ClassroomsPage() {
     return <div className="flex justify-center items-center h-screen"><Loader2 className="animate-spin" /></div>
   }
 
-  if (session?.user.isAdmin) {
+  if (session?.user && session.user.isAdmin) {
     return <div>Access denied. Superadmins cannot manage classrooms directly.</div>
   }
 
@@ -111,7 +123,7 @@ export default function ClassroomsPage() {
             <div className="flex justify-center"><Loader2 className="animate-spin" /></div>
           ) : (
             <ul className="space-y-2">
-              {classrooms.map((classroom: any) => (
+              {classrooms.map((classroom: Classroom) => (
                 <li key={classroom._id} className="flex justify-between items-center">
                   <span>{classroom.name}</span>
                   <span>Vacancy: {classroom.vacancy}</span>
@@ -132,4 +144,3 @@ export default function ClassroomsPage() {
     </div>
   )
 }
-

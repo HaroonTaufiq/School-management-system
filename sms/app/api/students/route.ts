@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { connectToDatabase } from '@/lib/mongodb'
 import { z } from 'zod'
 import { getToken } from 'next-auth/jwt'
@@ -11,7 +11,7 @@ const studentSchema = z.object({
   classroom: z.string().min(1),
 });
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   try {
     const token = await getToken({ req })
     if (!token || !verifyToken(token.accessToken as string) || token.isAdmin) {
@@ -51,7 +51,7 @@ export async function POST(req: Request) {
   }
 }
 
-export async function GET(req: Request) {
+export async function GET(req: NextRequest) {
   try {
     const token = await getToken({ req })
     if (!token || !verifyToken(token.accessToken as string)) {

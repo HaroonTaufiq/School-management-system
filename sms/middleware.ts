@@ -10,13 +10,13 @@ export async function middleware(request: NextRequest) {
   }
 
   // Role-based access control
-  if (request.nextUrl.pathname.startsWith('/dashboard/schools') && !token.isAdmin) {
+  if (request.nextUrl.pathname.startsWith('/dashboard/schools') && token.role !== 'superadmin') {
     return NextResponse.redirect(new URL('/dashboard', request.url))
   }
 
   if ((request.nextUrl.pathname.startsWith('/dashboard/classrooms') || 
        request.nextUrl.pathname.startsWith('/dashboard/students')) && 
-      token.isAdmin) {
+      token.role === 'superadmin') {
     return NextResponse.redirect(new URL('/dashboard', request.url))
   }
 
