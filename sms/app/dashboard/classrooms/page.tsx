@@ -29,6 +29,7 @@ export default function ClassroomsPage() {
   const [creating, setCreating] = useState(false)
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null)
 
+  console.log('session', session)
   useEffect(() => {
     if (status === 'authenticated') {
       fetchClassrooms()

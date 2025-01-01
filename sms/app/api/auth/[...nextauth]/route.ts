@@ -1,15 +1,16 @@
 
 import NextAuth from "next-auth"
-import type { NextAuthOptions, User } from "next-auth"
+import type { User } from "next-auth"
 import CredentialsProvider from "next-auth/providers/credentials"
 import { compare } from "bcryptjs"
+import { AuthOptions } from "next-auth"
 import { connectToDatabase } from "@/lib/mongodb"
 import { generateToken } from "@/lib/jwt"
 import { JWT } from "next-auth/jwt"
 import { Session } from "next-auth"
 import { User as UserModel } from "@/models/User"
 
-export const authOptions: NextAuthOptions = {
+export const authOptions: AuthOptions = {
   providers: [
     CredentialsProvider({
       name: "Credentials",
@@ -56,6 +57,7 @@ export const authOptions: NextAuthOptions = {
         session.user.school = token.school as string | undefined
         session.accessToken = generateToken(token)
       }
+      console.log('session', session)
       return session
     }
   },
@@ -69,5 +71,7 @@ export const authOptions: NextAuthOptions = {
   secret: process.env.NEXTAUTH_SECRET,
 }
 
-export default NextAuth(authOptions)
-
+// export default NextAuth(authOptions)
+const handler = NextAuth(authOptions)
+export const GET = handler
+export const POST = handler

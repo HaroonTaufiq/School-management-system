@@ -14,6 +14,7 @@ const classroomSchema = z.object({
 
 export async function POST(req: NextRequest) {
   try {
+   
     const token = await getToken({ req })
     if (!token || !verifyToken(token.accessToken as string) || token.isAdmin) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })

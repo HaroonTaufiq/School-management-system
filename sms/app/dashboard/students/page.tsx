@@ -1,5 +1,16 @@
 'use client'
 
+interface Classroom {
+  _id: string
+  name: string
+}
+
+interface Student {
+  _id: string
+  username: string
+  classroom: string
+}
+
 import { useState, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
 import { Button } from '@/components/ui/button'
@@ -79,7 +90,7 @@ export default function StudentsPage() {
                   <SelectValue placeholder="Select a classroom" />
                 </SelectTrigger>
                 <SelectContent>
-                  {classrooms.map((classroom: any) => (
+                  {classrooms.map((classroom: Classroom) => (
                     <SelectItem key={classroom._id} value={classroom.name}>
                       {classroom.name}
                     </SelectItem>
@@ -97,7 +108,7 @@ export default function StudentsPage() {
         </CardHeader>
         <CardContent>
           <ul className="space-y-2">
-            {students.map((student: any) => (
+            {students.map((student: Student) => (
               <li key={student._id} className="flex justify-between items-center">
                 <span>{student.username} - Classroom: {student.classroom}</span>
                 {/* Add edit and delete functionality here */}
