@@ -65,7 +65,9 @@ export default function ClassroomsPage() {
       setCreating(true)
       const res = await fetch('/api/classrooms', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session?.accessToken}`
+        },
         body: JSON.stringify({ ...newClassroom, vacancy: parseInt(newClassroom.vacancy), school: session?.user.school }),
       })
       if (!res.ok) throw new Error('Failed to create classroom')
@@ -91,9 +93,9 @@ export default function ClassroomsPage() {
     return <div className="flex justify-center items-center h-screen"><Loader2 className="animate-spin h-8 w-8" /></div>
   }
 
-  if (session?.user.role === 'superadmin') {
-    return <div className="text-center mt-8">Access denied. Superadmins cannot manage classrooms directly.</div>
-  }
+  // if (session?.user.role === 'superadmin') {
+  //   return <div className="text-center mt-8">Access denied. Superadmins cannot manage classrooms directly.</div>
+  // }
 
   return (
     <div className="space-y-6">

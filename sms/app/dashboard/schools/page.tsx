@@ -70,7 +70,9 @@ export default function SchoolsPage() {
       setCreating(true)
       const res = await fetch('/api/schools', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session?.accessToken}`
+         },
         body: JSON.stringify(newSchool),
       })
       if (!res.ok) throw new Error('Failed to create school')
@@ -96,9 +98,10 @@ export default function SchoolsPage() {
     return <div className="flex justify-center items-center h-screen"><Loader2 className="animate-spin h-8 w-8" /></div>
   }
 
-  if (!session?.user.isAdmin) {
-    return <div>Access denied. You must be a superadmin to view this page.</div>
-  }
+  // console.log('session',session)
+  // if (!session?.user.isAdmin) {
+  //   return <div>Access denied. You must be a superadmin to view this page.</div>
+  // }
 
   return (
     <div className="space-y-6">
