@@ -46,11 +46,16 @@ export async function POST(req: NextRequest) {
 
 export async function GET(req: NextRequest) {
   try {
-    const token = await getToken({ req })
-    if (!token || !verifyToken(token.accessToken as string)) {
+    const authHeader = req.headers.get('authorization')
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
+    const token = authHeader.split(' ')[1]
+    const payload = verifyToken(token)
+    if (!payload || payload.role !== 'superadmin') {
+      return NextResponse.json({ error: 'Access denied. You must be a superadmin to view this page.' }, { status: 401 })
+    }
     await connectToDatabase()
     const schools = await School.find().populate('classrooms').populate('admins')
 

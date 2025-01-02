@@ -55,6 +55,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
+    console.log('token', token)
     await connectToDatabase()
     const classrooms = await Classroom.find(token.isAdmin ? {} : { school: token.school }).populate('students')
 

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useSession } from 'next-auth/react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -32,17 +32,18 @@ export default function SchoolsPage() {
   const [creating, setCreating] = useState(false)
   const { toast } = useToast()
 
-  useEffect(() => {
-    if (status === 'authenticated') {
-      fetchSchools()
-    }
-  }, [status])
-
-  const fetchSchools = async () => {
+  const fetchSchools = useCallback(async () => {
     try {
       setLoading(true)
-      const res = await fetch('/api/schools')
-      if (!res.ok) throw new Error('Failed to fetch schools')
+      const res = await fetch('/api/schools', {
+        headers: {
+          'Authorization': `Bearer ${session?.accessToken}`
+        }
+      })
+      if (!res.ok) {
+        const error = await res.json()
+        throw new Error(error.error || 'Failed to fetch schools')
+      }
       const data = await res.json()
       setSchools(data.schools)
     } catch (error) {
@@ -55,7 +56,13 @@ export default function SchoolsPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [session?.accessToken, toast, setLoading, setSchools])
+
+  useEffect(() => {
+    if (status === 'authenticated' && session?.accessToken) {
+      fetchSchools()
+    }
+  }, [status, session, session?.accessToken, fetchSchools])
 
   const handleCreateSchool = async (e: React.FormEvent) => {
     e.preventDefault()

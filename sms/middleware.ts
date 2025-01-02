@@ -16,7 +16,7 @@ export async function middleware(request: NextRequest) {
 
   if ((request.nextUrl.pathname.startsWith('/dashboard/classrooms') || 
        request.nextUrl.pathname.startsWith('/dashboard/students')) && 
-      token.role === 'superadmin') {
+      token.role !== 'superadmin') {
     return NextResponse.redirect(new URL('/dashboard', request.url))
   }
 
