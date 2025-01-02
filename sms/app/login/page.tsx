@@ -32,15 +32,16 @@ export default function LoginPage() {
       setError('An unexpected error occurred')
       console.error(error)
     }
+    router.push('/dashboard')
   }
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-100">
-      <div className="p-6 bg-white rounded shadow-md w-96">
-        <h1 className="mb-4 text-2xl font-bold">Login</h1>
+    <div className="flex items-center justify-center min-h-screen bg-gray-900">
+      <div className="p-6 bg-black rounded shadow-md w-96">
+        <h1 className="mb-4 text-2xl font-bold text-white">Login</h1>
         <form onSubmit={handleSubmit}>
           <div className="mb-4">
-            <Label htmlFor="email">Email</Label>
+            <Label htmlFor="email" className="text-white">Email</Label>
             <Input
               id="email"
               type="email"

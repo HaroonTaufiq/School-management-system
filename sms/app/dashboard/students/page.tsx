@@ -36,13 +36,68 @@ import {
 } from '@/components/ui/select'
 
 export default function StudentsPage() {
-  const { data: session, status } = useSession()
+  const { status } = useSession()
   const { toast } = useToast()
   const [students, setStudents] = useState<Student[]>([])
   const [classrooms, setClassrooms] = useState<Classroom[]>([])
   const [newStudent, setNewStudent] = useState({ username: '', classroom: '' })
   const [loading, setLoading] = useState(true)
   const [creating, setCreating] = useState(false)
+  const [updatingStudent, setUpdatingStudent] = useState<{ _id: string; username: string; classroom: string } | null>(null);
+
+  const handleUpdateStudent = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!updatingStudent) return; // Ensure there's a student to update
+
+    try {
+      setCreating(true);
+      const res = await fetch(`/api/students`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ _id: updatingStudent._id, username: updatingStudent.username, classroom: updatingStudent.classroom }),
+      });
+      if (!res.ok) throw new Error('Failed to update student');
+      fetchStudents(); // Refresh the student list
+      setUpdatingStudent(null); // Clear the updating student state
+      toast({
+        title: "Success",
+        description: "Student updated successfully",
+      });
+    } catch (error) {
+      console.error('Failed to update student:', error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to update student"
+      });
+    } finally {
+      setCreating(false);
+    }
+  };
+
+  const handleDeleteStudent = async (studentId: string) => {
+    try {
+      const res = await fetch(`/api/students`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ _id: studentId }),
+      });
+      if (!res.ok) throw new Error('Failed to delete student');
+      fetchStudents(); // Refresh the student list
+      toast({
+        title: "Success",
+        description: "Student deleted successfully",
+      });
+    } catch (error) {
+      console.error('Failed to delete student:', error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to delete student"
+      });
+    }
+  };
+
 
   useEffect(() => {
     if (status === 'authenticated') {
@@ -75,6 +130,7 @@ export default function StudentsPage() {
       const res = await fetch('/api/classrooms')
       if (!res.ok) throw new Error('Failed to fetch classrooms')
       const data = await res.json()
+    console.log(data)
       setClassrooms(data.classrooms)
     } catch (error) {
       console.error('Error fetching classrooms:', error)
@@ -118,9 +174,9 @@ export default function StudentsPage() {
     return <div className="flex justify-center items-center h-screen"><Loader2 className="animate-spin h-8 w-8" /></div>
   }
 
-  if (session?.user.role === 'superadmin') {
-    return <div className="text-center mt-8">Access denied. Superadmins cannot manage students directly.</div>
-  }
+  // if (session?.user.role === 'superadmin') {
+  //   return <div className="text-center mt-8">Access denied. Superadmins cannot manage students directly.</div>
+  // }
 
   return (
     <div className="space-y-6">
@@ -151,6 +207,10 @@ export default function StudentsPage() {
                   <TableRow key={student._id}>
                     <TableCell className="font-medium">{student.username}</TableCell>
                     <TableCell>{student.classroom}</TableCell>
+                    <TableCell>
+                      <Button onClick={() => setUpdatingStudent(student)}>Edit</Button>
+                      <Button onClick={() => handleDeleteStudent(student._id)}>Delete</Button>
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -199,6 +259,51 @@ export default function StudentsPage() {
           </form>
         </CardContent>
       </Card>
+
+      { updatingStudent && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Update Student</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleUpdateStudent} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="username">Student Username</Label>
+                <Input
+                  id="username"
+                  value={updatingStudent.username}
+                  onChange={(e) => setUpdatingStudent({ ...updatingStudent, username: e.target.value })}
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="classroom">Classroom</Label>
+                <Select
+                  value={updatingStudent.classroom}
+                  onValueChange={(value) => setUpdatingStudent({ ...updatingStudent, classroom: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a classroom" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {classrooms.map((classroom) => (
+                      <SelectItem key={classroom._id} value={classroom.name}>
+                        {classroom.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <Button type="submit" disabled={creating}>
+                {creating ? <Loader2 className="animate-spin mr-2 h-4 w-4" /> : <UserPlus className="mr-2 h-4 w-4" />}
+                Update Student
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+
+
+     ) }
     </div>
   )
 }

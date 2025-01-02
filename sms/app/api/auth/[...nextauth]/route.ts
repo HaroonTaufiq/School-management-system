@@ -1,4 +1,3 @@
-
 import NextAuth from "next-auth"
 import type { User } from "next-auth"
 import CredentialsProvider from "next-auth/providers/credentials"
@@ -36,6 +35,7 @@ declare module "next-auth" {
 // Define custom JWT type
 declare module "next-auth/jwt" {
   interface JWT {
+    name?: string
     id: string
     email: string
     role: string
@@ -65,6 +65,7 @@ export const authOptions: AuthOptions = {
 
         return {
           id: user._id.toString(),
+          name: user.name,
           email: user.email,
           role: user.role,
           school: user.school,
@@ -76,6 +77,7 @@ export const authOptions: AuthOptions = {
     async jwt({ token, user }: { token: JWT; user?: User }) {
       if (user) {
         token.id = user.id
+        token.name = user.name
         token.email = user.email
         token.role = user.role
         token.school = user.school
@@ -85,6 +87,7 @@ export const authOptions: AuthOptions = {
     async session({ session, token }: { session: Session, token: JWT }) {
       if (token && session.user) {
         session.user.id = token.id as string
+        session.user.name = token.name as string
         session.user.email = token.email as string
         session.user.role = token.role as string
         session.user.school = token.school as string | undefined

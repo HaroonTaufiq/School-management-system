@@ -32,10 +32,67 @@ export default function ClassroomsPage() {
   const [newClassroom, setNewClassroom] = useState({ name: '', vacancy: '' })
   const [loading, setLoading] = useState(true)
   const [creating, setCreating] = useState(false)
+  const [updatingClassroom, setUpdatingClassroom] = useState<{ _id: string; name: string; vacancy: number } | null>(null);
+
+  const handleUpdateClassroom = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!updatingClassroom) return;
+    try {
+      const res = await fetch(`/api/classrooms`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session?.accessToken}`
+        },
+        body: JSON.stringify({ _id: updatingClassroom._id, name: updatingClassroom.name, vacancy: updatingClassroom.vacancy }),
+      });
+      if (!res.ok) throw new Error('Failed to update classroom');
+      fetchClassrooms();
+      toast({
+        title: "Success",
+        description: "Classroom updated successfully",
+      });
+      setUpdatingClassroom(null);
+    } catch (error) {
+      console.error('Failed to update classroom:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update classroom",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDeleteClassroom = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this classroom?')) return;
+    try {
+      const res = await fetch(`/api/classrooms`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session?.accessToken}`
+        },
+        body: JSON.stringify({ _id: id }),
+      });
+      if (!res.ok) throw new Error('Failed to delete classroom');
+      fetchClassrooms();
+      toast({
+        title: "Success",
+        description: "Classroom deleted successfully",
+      });
+    } catch (error) {
+      console.error('Failed to delete classroom:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete classroom",
+        variant: "destructive",
+      });
+    }
+  };
   const { toast } = useToast()
 
   useEffect(() => {
     if (status === 'authenticated') {
+
+      console.log('authhead', session?.accessToken)
       fetchClassrooms()
     }
   }, [status])
@@ -105,7 +162,7 @@ export default function ClassroomsPage() {
           <Plus className="mr-2 h-4 w-4" /> Add New Classroom
         </Button>
       </div>
-
+  
       <Card>
         <CardHeader>
           <CardTitle>Existing Classrooms</CardTitle>
@@ -120,6 +177,7 @@ export default function ClassroomsPage() {
                   <TableHead>Name</TableHead>
                   <TableHead>Vacancy</TableHead>
                   <TableHead>Students</TableHead>
+                  <TableHead>Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -128,6 +186,10 @@ export default function ClassroomsPage() {
                     <TableCell className="font-medium">{classroom.name}</TableCell>
                     <TableCell>{classroom.vacancy}</TableCell>
                     <TableCell>{classroom.students?.length || 0}</TableCell>
+                    <TableCell>
+                      <Button onClick={() => setUpdatingClassroom(classroom)}>Update</Button>
+                      <Button onClick={() => handleDeleteClassroom(classroom._id)} variant="destructive">Delete</Button>
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -135,7 +197,7 @@ export default function ClassroomsPage() {
           )}
         </CardContent>
       </Card>
-
+  
       <Card id="newClassroomForm">
         <CardHeader>
           <CardTitle>Create New Classroom</CardTitle>
@@ -168,7 +230,38 @@ export default function ClassroomsPage() {
           </form>
         </CardContent>
       </Card>
+  
+      {updatingClassroom && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Update Classroom</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleUpdateClassroom} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="name">Classroom Name</Label>
+                <Input
+                  id="name"
+                  value={updatingClassroom.name}
+                  onChange={(e) => setUpdatingClassroom({ ...updatingClassroom, name: e.target.value })}
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="vacancy">Vacancy</Label>
+                <Input
+                  id="vacancy"
+                  type="number"
+                  value={updatingClassroom.vacancy}
+                  onChange={(e) => setUpdatingClassroom({ ...updatingClassroom, vacancy: parseInt(e.target.value) })}
+                  required
+                />
+              </div>
+              <Button type="submit">Update Classroom</Button>
+            </form>
+          </CardContent>
+        </Card>
+      )}
     </div>
-  )
+  );
 }
-

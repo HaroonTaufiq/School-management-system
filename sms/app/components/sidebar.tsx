@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useSession } from 'next-auth/react'
-import { School, Users, BookOpen, LayoutDashboard } from 'lucide-react'
+import { School, Users, BookOpen, LayoutDashboard, User, UserPlus } from 'lucide-react'
 
 export function Sidebar() {
   const { data: session } = useSession()
@@ -15,10 +15,20 @@ export function Sidebar() {
           Dashboard
         </Link>
         {session?.user?.role === 'superadmin' && (
+          <>
           <Link href="/dashboard/schools" className="block py-2.5 px-4 rounded transition duration-200 hover:bg-gray-700 hover:text-white">
             <School className="inline-block mr-2" />
             Schools
           </Link>
+          <Link href="/dashboard/classrooms" className="block py-2.5 px-4 rounded transition duration-200 hover:bg-gray-700 hover:text-white">
+          <BookOpen className="inline-block mr-2" />
+          Classrooms
+        </Link>
+        <Link href="/dashboard/students" className="block py-2.5 px-4 rounded transition duration-200 hover:bg-gray-700 hover:text-white">
+          <Users className="inline-block mr-2" />
+          Students
+        </Link>
+        </>
         )}
         {session?.user?.role !== 'superadmin' && (
           <>
@@ -31,6 +41,16 @@ export function Sidebar() {
               Students
             </Link>
           </>
+        )}
+        <Link href="/dashboard/profile" className="block py-2.5 px-4 rounded transition duration-200 hover:bg-gray-700 hover:text-white">
+          <User className="inline-block mr-2" />
+          Profile
+        </Link>
+        {(session?.user?.role === 'superadmin' || session?.user?.role === 'admin') && (
+          <Link href="/dashboard/add-admin" className="block py-2.5 px-4 rounded transition duration-200 hover:bg-gray-700 hover:text-white">
+            <UserPlus className="inline-block mr-2" />
+            Add Admin
+          </Link>
         )}
       </nav>
     </div>

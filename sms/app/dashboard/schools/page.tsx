@@ -21,15 +21,87 @@ interface School {
   _id: string;
   name: string;
   location: string;
-  classrooms: string[];
+  classrooms: Array<{
+    _id: string;
+    name: string;
+    vacancy: number;
+    students: string[];
+  }>;
+  classroomIds: string[];
+  adminIds: string[];
 }
 
 export default function SchoolsPage() {
   const { data: session, status } = useSession()
   const [schools, setSchools] = useState([])
-  const [newSchool, setNewSchool] = useState({ name: '', location: '' })
+  const [newSchool, setNewSchool] = useState({ name: '', location: '', classroomIds: [], adminIds: [] });
+  const [updatingSchool, setUpdatingSchool] = useState<{ _id: string; name: string; location: string; classroomIds: string[]; adminIds: string[] } | null>(null);
   const [loading, setLoading] = useState(true)
   const [creating, setCreating] = useState(false)
+
+  const handleUpdateSchool = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!updatingSchool) return;
+    try {
+      const res = await fetch(`/api/schools`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session?.accessToken}`
+        },
+        body: JSON.stringify({
+          _id: updatingSchool._id,
+          name: updatingSchool.name,
+          location: updatingSchool.location,
+          classroomIds: updatingSchool.classroomIds,
+          adminIds: updatingSchool.adminIds
+        }),
+
+      });
+      if (!res.ok) throw new Error('Failed to update school');
+      fetchSchools();
+      toast({
+        title: "Success",
+        description: "School updated successfully",
+      });
+      setUpdatingSchool(null);
+    } catch (error) {
+      console.error('Failed to update school:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update school",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDeleteSchool = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this school?')) return;
+    try {
+      const res = await fetch(`/api/schools`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session?.accessToken}`
+        },
+        body: JSON.stringify({ name: id }),
+      });
+      if (!res.ok) throw new Error('Failed to delete school');
+      fetchSchools();
+      toast({
+        title: "Success",
+        description: "School deleted successfully",
+      });
+    } catch (error) {
+      console.error('Failed to delete school:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete school",
+        variant: "destructive",
+      });
+    }
+  };
+
   const { toast } = useToast()
 
   const fetchSchools = useCallback(async () => {
@@ -70,13 +142,14 @@ export default function SchoolsPage() {
       setCreating(true)
       const res = await fetch('/api/schools', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json',
+        headers: {
+          'Content-Type': 'application/json',
           'Authorization': `Bearer ${session?.accessToken}`
-         },
+        },
         body: JSON.stringify(newSchool),
       })
       if (!res.ok) throw new Error('Failed to create school')
-      setNewSchool({ name: '', location: '' })
+      setNewSchool({ name: '', location: '', classroomIds: [], adminIds: [] });
       fetchSchools()
       toast({
         title: "Success",
@@ -126,6 +199,7 @@ export default function SchoolsPage() {
                   <TableHead>Name</TableHead>
                   <TableHead>Location</TableHead>
                   <TableHead>Classrooms</TableHead>
+                  <TableHead>Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -134,6 +208,16 @@ export default function SchoolsPage() {
                     <TableCell className="font-medium">{school.name}</TableCell>
                     <TableCell>{school.location}</TableCell>
                     <TableCell>{school.classrooms?.length || 0}</TableCell>
+                    <TableCell>
+                      <Button onClick={() => setUpdatingSchool({
+                        ...school,
+                        classroomIds: school.classroomIds || [], // Ensure it's an array
+                        adminIds: school.adminIds || [] // Ensure it's an array
+                      })}>
+                        Update
+                      </Button>
+                      <Button onClick={() => handleDeleteSchool(school.name)} variant="destructive">Delete</Button>
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -166,6 +250,24 @@ export default function SchoolsPage() {
                 required
               />
             </div>
+            <div className="space-y-2">
+              <Label htmlFor="classroomIds">Classroom IDs (comma-separated)</Label>
+              <Input
+                id="classroomIds"
+                value={newSchool.classroomIds.join(', ')}
+                onChange={(e) => setNewSchool({ ...newSchool, classroomIds: e.target.value.split(',').map(id => id.trim()) })}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="adminIds">Admin IDs (comma-separated)</Label>
+              <Input
+                id="adminIds"
+                value={newSchool.adminIds.join(', ')}
+                onChange={(e) => setNewSchool({ ...newSchool, adminIds: e.target.value.split(',').map(id => id.trim()) })}
+                required
+              />
+            </div>
             <Button type="submit" disabled={creating}>
               {creating ? <Loader2 className="animate-spin mr-2 h-4 w-4" /> : <School className="mr-2 h-4 w-4" />}
               Create School
@@ -173,7 +275,46 @@ export default function SchoolsPage() {
           </form>
         </CardContent>
       </Card>
-    </div>
-  )
-}
 
+      {updatingSchool && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Update School</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleUpdateSchool} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="location">Location</Label>
+                <Input
+                  id="location"
+                  value={updatingSchool.location}
+                  onChange={(e) => setUpdatingSchool({ ...updatingSchool, location: e.target.value })}
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="classroomIds">Classroom IDs (comma-separated)</Label>
+                <Input
+                  id="classroomIds"
+                  value={updatingSchool.classroomIds.join(', ')}
+                  onChange={(e) => setUpdatingSchool({ ...updatingSchool, classroomIds: e.target.value.split(',').map(id => id.trim()) })}
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="adminIds">Admin IDs (comma-separated)</Label>
+                <Input
+                  id="adminIds"
+                  value={updatingSchool.adminIds.join(', ')}
+                  onChange={(e) => setUpdatingSchool({ ...updatingSchool, adminIds: e.target.value.split(',').map(id => id.trim()) })}
+                  required
+                />
+              </div>
+              <Button type="submit">Update School</Button>
+            </form>
+          </CardContent>
+        </Card>
+      )}
+    </div>
+  );
+}

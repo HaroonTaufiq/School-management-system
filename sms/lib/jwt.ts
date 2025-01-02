@@ -17,15 +17,13 @@ export function generateToken(payload: Payload): string {
     options.expiresIn = '1d';
     
   }
-  console.log('payload', payload)
+  // console.log('payload', payload)
   return jwt.sign(payload, JWT_SECRET, options);
 }
 
 export function verifyToken(token: string): Payload | null {
   try {
-    // console.log('token', token)
     const payload = jwt.verify(token, JWT_SECRET)
-    // console.log('payload', payload)
     
     return payload as Payload
   } catch (error) {

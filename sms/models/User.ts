@@ -6,10 +6,12 @@ interface User {
   password: string;
   role: 'superadmin' | 'admin' | 'user';
   school?: string;
+  name?: string;
 }
 
 // Update the user schema to use the User interface
 const userSchema = new mongoose.Schema<User>({
+  name: { type: String, required: true },
   email: { type: String, required: true, unique: true },
   password: { type: String, required: true },
   role: { type: String, required: true, enum: ['superadmin', 'admin', 'user'] },
