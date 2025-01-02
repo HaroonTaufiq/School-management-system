@@ -10,6 +10,39 @@ import { JWT } from "next-auth/jwt"
 import { Session } from "next-auth"
 import { User as UserModel } from "@/models/User"
 
+// Define custom session type
+declare module "next-auth" {
+  interface Session {
+    user: {
+      id: string
+      email: string
+      role: string
+      school?: string
+      name?: string | null
+      image?: string | null
+    }
+    expires: string
+    accessToken: string
+  }
+
+  interface User {
+    id: string
+    email: string
+    role: string
+    school?: string
+  }
+}
+
+// Define custom JWT type
+declare module "next-auth/jwt" {
+  interface JWT {
+    id: string
+    email: string
+    role: string
+    school?: string
+  }
+}
+
 export const authOptions: AuthOptions = {
   providers: [
     CredentialsProvider({
@@ -40,7 +73,7 @@ export const authOptions: AuthOptions = {
     })
   ],
   callbacks: {
-    async jwt({ token, user }: { token: JWT, user?: User }) {
+    async jwt({ token, user }: { token: JWT; user?: User }) {
       if (user) {
         token.id = user.id
         token.email = user.email
@@ -57,7 +90,6 @@ export const authOptions: AuthOptions = {
         session.user.school = token.school as string | undefined
         session.accessToken = generateToken(token)
       }
-      console.log('session', session)
       return session
     }
   },
@@ -71,7 +103,5 @@ export const authOptions: AuthOptions = {
   secret: process.env.NEXTAUTH_SECRET,
 }
 
-// export default NextAuth(authOptions)
 const handler = NextAuth(authOptions)
-export const GET = handler
-export const POST = handler
+export { handler as GET, handler as POST }
