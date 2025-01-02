@@ -1,18 +1,26 @@
-import { Inter } from 'next/font/google'
-import { AuthProvider } from '../components/auth-provider'
-import { ThemeProvider } from '../components/theme-provider'
+import { Header } from '../components/header'
+import { Sidebar } from '../components/sidebar'
+import { Toaster } from '@/components/ui/toaster'
 
-const inter = Inter({ subsets: ['latin'] })
-
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default function DashboardLayout({
+  children,
+}: {
+  children: React.ReactNode
+}) {
   return (
-    <html lang="en">
-      <body className={inter.className}>
-        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-          <AuthProvider>{children}</AuthProvider>
-        </ThemeProvider>
-      </body>
-    </html>
+    <div className="flex h-screen bg-gray-100 dark:bg-gray-900">
+      <Sidebar />
+      <div className="flex-1 flex flex-col overflow-hidden">
+        <Header />
+        <main className="flex-1 overflow-x-hidden overflow-y-auto bg-gray-100 dark:bg-gray-800">
+          <div className="container mx-auto px-6 py-8">
+            {children}
+            <Toaster/>
+          </div>
+        </main>
+      </div>
+      <Toaster />
+    </div>
   )
 }
 

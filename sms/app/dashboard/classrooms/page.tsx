@@ -2,13 +2,20 @@
 
 import { useState, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
-import { Session } from 'next-auth'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Toast } from '../../components/toast'
-import { Loader2 } from 'lucide-react'
+import { useToast } from '@/components/ui/use-toast'
+import { Loader2, Plus, Users } from 'lucide-react'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
 
 interface Classroom {
   _id: string;
@@ -18,18 +25,15 @@ interface Classroom {
   school: string;
 }
 
+
 export default function ClassroomsPage() {
-  const { data: session, status } = useSession() as { 
-    data: Session | null, 
-    status: "loading" | "authenticated" | "unauthenticated" 
-  }
-  const [classrooms, setClassrooms] = useState<Classroom[]>([])
-  const [newClassroom, setNewClassroom] = useState({ name: '', vacancy: '', school: '' })
+  const { data: session, status } = useSession()
+  const [classrooms, setClassrooms] = useState([])
+  const [newClassroom, setNewClassroom] = useState({ name: '', vacancy: '' })
   const [loading, setLoading] = useState(true)
   const [creating, setCreating] = useState(false)
-  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null)
+  const { toast } = useToast()
 
-  console.log('session', session)
   useEffect(() => {
     if (status === 'authenticated') {
       fetchClassrooms()
@@ -45,7 +49,11 @@ export default function ClassroomsPage() {
       setClassrooms(data.classrooms)
     } catch (error) {
       console.error('Error fetching classrooms:', error)
-      setToast({ message: 'Failed to fetch classrooms', type: 'error' })
+      toast({
+        title: "Error",
+        description: "Failed to fetch classrooms",
+        variant: "destructive",
+      })
     } finally {
       setLoading(false)
     }
@@ -58,38 +66,81 @@ export default function ClassroomsPage() {
       const res = await fetch('/api/classrooms', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...newClassroom, vacancy: parseInt(newClassroom.vacancy), school: session?.user?.school }),
+        body: JSON.stringify({ ...newClassroom, vacancy: parseInt(newClassroom.vacancy), school: session?.user.school }),
       })
       if (!res.ok) throw new Error('Failed to create classroom')
-      setNewClassroom({ name: '', vacancy: '', school: '' })
+      setNewClassroom({ name: '', vacancy: '' })
       fetchClassrooms()
-      setToast({ message: 'Classroom created successfully', type: 'success' })
+      toast({
+        title: "Success",
+        description: "Classroom created successfully",
+      })
     } catch (error) {
       console.error('Failed to create classroom:', error)
-      setToast({ message: 'Failed to create classroom', type: 'error' })
+      toast({
+        title: "Error",
+        description: "Failed to create classroom",
+        variant: "destructive",
+      })
     } finally {
       setCreating(false)
     }
   }
 
   if (status === 'loading') {
-    return <div className="flex justify-center items-center h-screen"><Loader2 className="animate-spin" /></div>
+    return <div className="flex justify-center items-center h-screen"><Loader2 className="animate-spin h-8 w-8" /></div>
   }
 
-  if (session?.user && session.user.isAdmin) {
-    return <div>Access denied. Superadmins cannot manage classrooms directly.</div>
+  if (session?.user.role === 'superadmin') {
+    return <div className="text-center mt-8">Access denied. Superadmins cannot manage classrooms directly.</div>
   }
 
   return (
-    <div>
-      <h1 className="text-2xl font-bold mb-4">Manage Classrooms</h1>
-      <Card className="mb-8">
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <h1 className="text-3xl font-bold tracking-tight">Manage Classrooms</h1>
+        <Button onClick={() => document.getElementById('newClassroomForm')?.scrollIntoView({ behavior: 'smooth' })}>
+          <Plus className="mr-2 h-4 w-4" /> Add New Classroom
+        </Button>
+      </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Existing Classrooms</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {loading ? (
+            <div className="flex justify-center"><Loader2 className="animate-spin h-8 w-8" /></div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Name</TableHead>
+                  <TableHead>Vacancy</TableHead>
+                  <TableHead>Students</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {classrooms.map((classroom: Classroom) => (
+                  <TableRow key={classroom._id}>
+                    <TableCell className="font-medium">{classroom.name}</TableCell>
+                    <TableCell>{classroom.vacancy}</TableCell>
+                    <TableCell>{classroom.students?.length || 0}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card id="newClassroomForm">
         <CardHeader>
           <CardTitle>Create New Classroom</CardTitle>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleCreateClassroom} className="space-y-4">
-            <div>
+            <div className="space-y-2">
               <Label htmlFor="name">Classroom Name</Label>
               <Input
                 id="name"
@@ -98,7 +149,7 @@ export default function ClassroomsPage() {
                 required
               />
             </div>
-            <div>
+            <div className="space-y-2">
               <Label htmlFor="vacancy">Vacancy</Label>
               <Input
                 id="vacancy"
@@ -109,39 +160,13 @@ export default function ClassroomsPage() {
               />
             </div>
             <Button type="submit" disabled={creating}>
-              {creating ? <Loader2 className="animate-spin mr-2" /> : null}
+              {creating ? <Loader2 className="animate-spin mr-2 h-4 w-4" /> : <Users className="mr-2 h-4 w-4" />}
               Create Classroom
             </Button>
           </form>
         </CardContent>
       </Card>
-      <Card>
-        <CardHeader>
-          <CardTitle>Existing Classrooms</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {loading ? (
-            <div className="flex justify-center"><Loader2 className="animate-spin" /></div>
-          ) : (
-            <ul className="space-y-2">
-              {classrooms.map((classroom: Classroom) => (
-                <li key={classroom._id} className="flex justify-between items-center">
-                  <span>{classroom.name}</span>
-                  <span>Vacancy: {classroom.vacancy}</span>
-                  <span>Students: {classroom.students.length}</span>
-                </li>
-              ))}
-            </ul>
-          )}
-        </CardContent>
-      </Card>
-      {toast && (
-        <Toast
-          message={toast.message}
-          type={toast.type}
-          onClose={() => setToast(null)}
-        />
-      )}
     </div>
   )
 }
+

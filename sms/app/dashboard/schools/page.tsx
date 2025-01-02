@@ -2,13 +2,20 @@
 
 import { useState, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
-import type { Session } from 'next-auth'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Toast } from '../../components/toast'
-import { Loader2 } from 'lucide-react'
+import { useToast } from '@/components/ui/use-toast'
+import { Loader2, Plus, School } from 'lucide-react'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
 
 interface School {
   _id: string;
@@ -18,12 +25,12 @@ interface School {
 }
 
 export default function SchoolsPage() {
-  const { data: session, status } = useSession() as { data: Session | null, status: string }
-  const [schools, setSchools] = useState<School[]>([])
+  const { data: session, status } = useSession()
+  const [schools, setSchools] = useState([])
   const [newSchool, setNewSchool] = useState({ name: '', location: '' })
   const [loading, setLoading] = useState(true)
   const [creating, setCreating] = useState(false)
-  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null)
+  const { toast } = useToast()
 
   useEffect(() => {
     if (status === 'authenticated') {
@@ -40,7 +47,11 @@ export default function SchoolsPage() {
       setSchools(data.schools)
     } catch (error) {
       console.error('Error fetching schools:', error)
-      setToast({ message: 'Failed to fetch schools', type: 'error' })
+      toast({
+        title: "Error",
+        description: "Failed to fetch schools",
+        variant: "destructive",
+      })
     } finally {
       setLoading(false)
     }
@@ -58,17 +69,24 @@ export default function SchoolsPage() {
       if (!res.ok) throw new Error('Failed to create school')
       setNewSchool({ name: '', location: '' })
       fetchSchools()
-      setToast({ message: 'School created successfully', type: 'success' })
+      toast({
+        title: "Success",
+        description: "School created successfully",
+      })
     } catch (error) {
       console.error('Failed to create school:', error)
-      setToast({ message: 'Failed to create school', type: 'error' })
+      toast({
+        title: "Error",
+        description: "Failed to create school",
+        variant: "destructive",
+      })
     } finally {
       setCreating(false)
     }
   }
 
   if (status === 'loading') {
-    return <div className="flex justify-center items-center h-screen"><Loader2 className="animate-spin" /></div>
+    return <div className="flex justify-center items-center h-screen"><Loader2 className="animate-spin h-8 w-8" /></div>
   }
 
   if (!session?.user.isAdmin) {
@@ -76,15 +94,51 @@ export default function SchoolsPage() {
   }
 
   return (
-    <div>
-      <h1 className="text-2xl font-bold mb-4">Manage Schools</h1>
-      <Card className="mb-8">
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <h1 className="text-3xl font-bold tracking-tight">Manage Schools</h1>
+        <Button onClick={() => document.getElementById('newSchoolForm')?.scrollIntoView({ behavior: 'smooth' })}>
+          <Plus className="mr-2 h-4 w-4" /> Add New School
+        </Button>
+      </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Existing Schools</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {loading ? (
+            <div className="flex justify-center"><Loader2 className="animate-spin h-8 w-8" /></div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Name</TableHead>
+                  <TableHead>Location</TableHead>
+                  <TableHead>Classrooms</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {schools.map((school: School) => (
+                  <TableRow key={school._id}>
+                    <TableCell className="font-medium">{school.name}</TableCell>
+                    <TableCell>{school.location}</TableCell>
+                    <TableCell>{school.classrooms?.length || 0}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card id="newSchoolForm">
         <CardHeader>
           <CardTitle>Create New School</CardTitle>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleCreateSchool} className="space-y-4">
-            <div>
+            <div className="space-y-2">
               <Label htmlFor="name">School Name</Label>
               <Input
                 id="name"
@@ -93,7 +147,7 @@ export default function SchoolsPage() {
                 required
               />
             </div>
-            <div>
+            <div className="space-y-2">
               <Label htmlFor="location">Location</Label>
               <Input
                 id="location"
@@ -103,38 +157,13 @@ export default function SchoolsPage() {
               />
             </div>
             <Button type="submit" disabled={creating}>
-              {creating ? <Loader2 className="animate-spin mr-2" /> : null}
+              {creating ? <Loader2 className="animate-spin mr-2 h-4 w-4" /> : <School className="mr-2 h-4 w-4" />}
               Create School
             </Button>
           </form>
         </CardContent>
       </Card>
-      <Card>
-        <CardHeader>
-          <CardTitle>Existing Schools</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {loading ? (
-            <div className="flex justify-center"><Loader2 className="animate-spin" /></div>
-          ) : (
-            <ul className="space-y-2">
-              {schools.map((school: School) => (
-                <li key={school._id} className="flex justify-between items-center">
-                  <span>{school.name} - {school.location}</span>
-                  <span>Classrooms: {school.classrooms.length}</span>
-                </li>
-              ))}
-            </ul>
-          )}
-        </CardContent>
-      </Card>
-      {toast && (
-        <Toast
-          message={toast.message}
-          type={toast.type}
-          onClose={() => setToast(null)}
-        />
-      )}
     </div>
   )
 }
+
